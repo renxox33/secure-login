@@ -1,6 +1,9 @@
 const LocalStrategy = require('passport-local').Strategy
+const GoogleStrategy = require('passport-google-oauth20').Strategy
 const bcrypt = require('bcrypt')
 const shopUser = require('./db')
+require('dotenv').config()
+const mongoose = require('mongoose')
 
 function initialize(passport){
 
@@ -18,7 +21,6 @@ function initialize(passport){
                 try {
                     
                     if (await bcrypt.compare(password, user.password)){ 
-                        console.log(user); 
                         return done(null, user)
                     } else{
                         return done(null, false, { message: 'Password is incorrect' })
@@ -50,4 +52,42 @@ function initialize(passport){
       });
 }
 
-module.exports = initialize
+module.exports.googleAuth = (passport) => {
+
+    console.log('googleAuth');
+    
+
+    passport.use(new GoogleStrategy({
+        clientID: process.env.CLIENT_ID,
+        clientSecret: process.env.CLIENT_SECRET,
+        callbackURL: 'http://localhost:3000/authgoogle/callback'
+    },  
+    function(accessToken, refreshToken, profile, cb){
+
+        console.log(typeof(profile.id));
+
+        shopUser.findOne({gid: profile.id}, (err, user) => {
+            if(err){
+                console.log(err);
+                
+            } else{
+                if(user){
+                    //code if user found
+                    return cb(err,user)
+                } else {
+                    const newUser = new shopUser({
+                        gid: profile.id,
+                        name: profile.displayName
+                    })
+
+                    newUser.save()
+                    return cb(err,newUser)
+                }
+            }
+        })
+        console.log(profile);     
+    }
+    ))
+}
+
+module.exports.initializeLocalStrategy = initialize

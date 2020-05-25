@@ -8,6 +8,7 @@ mongoose.connect('mongodb://localhost:27017/' + db, { useUnifiedTopology: true, 
 
 //define schema
 const userSchema = new mongoose.Schema({
+    gid: String,
     name: String,
     email: String,
     password: String

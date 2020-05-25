@@ -15,29 +15,7 @@ const shopUser = require('./db')
 const app = express()
 const port = process.env.port || 3000
 
-initializePassport(
-    passport
-    // email => {
-    //     shopUser.findOne({ email: email }, (err, result) => {
-    //         if(err){
-    //             res.status(400).send(err)
-    //         } else{
-    //             result
-    //         }
-    //     })
-    // },
-    // id => {
-    //     shopUser.findOne({ id: id }, (err, foundUser) => {
-    //         if(err){
-    //             res.status(400).send(err)
-    //         } else{
-                
-    //             return foundUser
-    //         }
-    //     })
-    // }
-
-)
+initializePassport.initializeLocalStrategy(passport)
 
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -45,11 +23,14 @@ app.use(flash())
 app.use(session({
     secret: process.env.USER_SECRET,
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    name: 'Express'
 }))
 app.use(passport.initialize())
 app.use(passport.session())
 app.use(methodOverride('_method'))
+
+initializePassport.googleAuth(passport)
 
 
 const checkAuthenticated = (req,res,next) => {
@@ -112,6 +93,15 @@ app.delete('/logout', (req,res) => {
     res.redirect('/login')
 })
 
+app.get('/authgoogle',passport.authenticate('google', { scope: ['profile'] }))
 
+app.get('/authgoogle/callback', 
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  function(req, res) {
+      console.log('Successfully authenticated');
+      
+    // Successful authentication, redirect home.
+    res.redirect('/');
+  });
 
 app.listen(port)
